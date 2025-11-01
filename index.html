@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Market Pricing Tool v2.0 • TR Garage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#0b0c0e;
+    --panel:#121418;
+    --card:#171a1f;
+    --muted:#a8b0bd;
+    --text:#e8ecf2;
+    --accent:#62d0ff;
+    --accent2:#8df7c1;
+    --warning:#ffb74d; /* amber */
+    --danger:#ff6b6b;  /* soft red tuned for CVD */
+    --success:#60d394; /* green tuned for CVD */
+    --grid:#232834;
+    --border:#1f2430;
+    --focus:#ffffff;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  }
+  header{
+    display:flex;align-items:center;gap:12px;
+    padding:14px 16px;border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg, #0e1116, #0b0c0e);
+    position:sticky;top:0;z-index:20;
+  }
+  .logo{
+    width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  }
+  .title{font-weight:600}
+  .shell{
+    display:grid;grid-template-columns:360px 1fr;min-height:calc(100vh - 56px);
+  }
+  aside{
+    border-right:1px solid var(--border);background:var(--panel);padding:16px;position:sticky;top:56px;height:calc(100vh - 56px);overflow:auto;
+  }
+  main{padding:16px 16px 120px}
+  h2{margin:12px 0 8px;font-size:16px}
+  h3{margin:16px 0 8px;font-size:15px;color:var(--muted)}
+  .group{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px}
+  .uploader{
+    border:1px dashed #3a4152;border-radius:10px;padding:10px;margin-bottom:8px;background:#0f1217;
+  }
+  .uploader[aria-busy="true"]{opacity:0.6}
+  .uploader.drag{outline:2px solid var(--accent)}
+  .uploader input{display:none}
+  .up-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .up-title{font-weight:600}
+  .filemeta{font-size:12px;color:var(--muted)}
+  .btn, button{
+    background:#1d2230;border:1px solid #2b3344;color:var(--text);
+    padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600
+  }
+  .btn.primary{background:linear-gradient(180deg,#1f7fb7,#145a86);border-color:#1b678f}
+  .btn.ghost{background:transparent;border-color:#3a4254}
+  .btn.warn{background:#3a2a10;border-color:#5a3a12;color:#ffc977}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .controls-row{display:flex;gap:8px;flex-wrap:wrap}
+  label{display:block;margin:6px 0 4px;color:#c7cfdb;font-weight:600}
+  input[type="date"],input[type="number"]{
+    width:100%;padding:8px;border-radius:8px;border:1px solid #2b3344;background:#12161f;color:var(--text)
+  }
+  .assump-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .small{font-size:12px;color:var(--muted)}
+  .formula{background:#0e121a;border:1px solid var(--border);border-radius:10px;padding:8px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#cfe6ff}
+  .banner{
+    display:none;align-items:center;gap:8px;padding:10px;border-radius:10px;margin:8px 0;
+    background:#332020;border:1px solid #5d2b2b;color:#ffb1b1
+  }
+  .banner.show{display:flex}
+  .spinner{width:14px;height:14px;border:2px solid #3a4254;border-top-color:#9fd9ff;border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px}
+  .card h4{margin:0 0 6px;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .card .num{font-size:20px;font-weight:700}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:6px 0}
+  .chip{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .dot.green{background:var(--success)}
+  .dot.amber{background:var(--warning)}
+  .dot.red{background:var(--danger)}
+  .tabs{display:flex;gap:8px;margin:8px 0 12px}
+  .tab{padding:8px 10px;border-radius:8px;border:1px solid #2b3344;background:#12161f;cursor:pointer}
+  .tab.active{border-color:#4a90c2;background:#162232}
+  .section{display:none}
+  .section.active{display:block}
+  canvas{width:100%;height:260px;background:#0f131b;border:1px solid var(--border);border-radius:10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px;border-bottom:1px solid #242b39}
+  th{position:sticky;top:0;background:#11151c;z-index:1;text-align:left}
+  tr:hover td{background:#0f141c}
+  .pill{padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:6px}
+  .pill.green{background:rgba(96,211,148,.2);color:var(--success);border:1px solid rgba(96,211,148,.4)}
+  .pill.amber{background:rgba(255,183,77,.18);color:#ffcb7a;border:1px solid rgba(255,183,77,.35)}
+  .pill.red{background:rgba(255,107,107,.18);color:#ff9a9a;border:1px solid rgba(255,107,107,.35)}
+  .right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .sr-only{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
+  /* Modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
+  .modal.show{display:flex}
+  .modal-card{background:#0f131a;border:1px solid var(--border);border-radius:12px;max-width:1100px;width:100%;max-height:90vh;overflow:auto;padding:14px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  textarea{width:100%;min-height:160px;background:#0b1017;color:#e8ecf2;border:1px solid #2b3344;border-radius:8px;padding:8px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  /* Accessibility focus */
+  :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+  /* Print to PDF */
+  @media print{
+    header,aside .group:has(.no-print), .tabs, .right, .controls-row, .banner{display:none !important}
+    .shell{grid-template-columns:1fr}
+    main{padding:0}
+    body{background:#fff;color:#000}
+    table, th, td{border-color:#ddd}
+    .card{border-color:#ddd}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true"></div>
+  <div>
+    <div class="title">Total Rewards Market Pricing Tool v2.0</div>
+    <div class="small">Client-side. No servers. CSV workflow.</div>
+  </div>
+  <div style="margin-left:auto" class="small">Signed in: <strong>TR Garage</strong></div>
+</header>
+
+<div class="shell">
+  <aside aria-label="Controls">
+    <div class="group">
+      <h2>Files</h2>
+      <div id="uploaders"></div>
+      <div class="controls-row">
+        <button class="btn" id="loadSampleBtn">Load Sample Data</button>
+        <button class="btn ghost" id="editSampleBtn">Edit Sample Data</button>
+        <button class="btn ghost" id="resetSampleBtn">Reset to Default</button>
+      </div>
+      <div class="small" style="margin-top:6px">Four CSVs required: Job Catalog, Employees, Market, Structures.</div>
+    </div>
+
+    <div class="group">
+      <h2>Assumptions</h2>
+      <div class="assump-grid">
+        <div>
+          <label for="surveyDate">Survey Effective Date</label>
+          <input id="surveyDate" type="date">
+        </div>
+        <div>
+          <label for="ageDate">Common Age Date</label>
+          <input id="ageDate" type="date">
+        </div>
+        <div>
+          <label for="annualRate">Annual Market Movement %</label>
+          <input id="annualRate" type="number" step="0.1" value="3.5">
+        </div>
+      </div>
+      <div class="small" style="margin-top:6px">Aging Factor</div>
+      <div id="agingFormula" class="formula" aria-live="polite"></div>
+    </div>
+
+    <div class="group">
+      <h2>Run</h2>
+      <div id="errorBanner" class="banner" role="alert"><span class="spinner" aria-hidden="true"></span><span id="errorText">Error</span></div>
+      <div class="controls-row">
+        <button class="btn primary" id="runBtn" disabled><span class="spinner" style="display:none" id="runSpin"></span> Run Market Analysis</button>
+        <button class="btn ghost" id="viewPromptBtn">View Prompt</button>
+      </div>
+      <div class="legend">
+        <span class="chip"><span class="dot green"></span>95 to 105 good</span>
+        <span class="chip"><span class="dot amber"></span>near bound</span>
+        <span class="chip"><span class="dot red"></span>out of bound</span>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Strategic Modeling & Costing</h2>
+      <label for="rule">Rule</label>
+      <select id="rule" style="width:100%;padding:8px;border-radius:8px;border:1px solid #2b3344;background:#12161f;color:var(--text)">
+        <option value="align">Align Midpoints to Market P50</option>
+        <option value="increase">Increase Midpoints by %</option>
+      </select>
+      <div id="percentWrap" style="display:none;margin-top:8px">
+        <label for="pct">Increase %</label>
+        <input id="pct" type="number" step="0.1" value="3.0">
+      </div>
+      <div class="controls-row" style="margin-top:8px">
+        <button class="btn" id="applyModelBtn" disabled>Apply & Cost Model</button>
+      </div>
+      <div class="small">Outputs shown under Costing tab after analysis runs.</div>
+    </div>
+
+    <div class="group">
+      <h2>Export</h2>
+      <div class="controls-row">
+        <button class="btn" id="dlCsvBtn" disabled>Download Results CSV</button>
+        <button class="btn ghost" id="dlPdfBtn" disabled>Download PDF</button>
+      </div>
+      <div class="small">PDF uses print styles. Your browser will ask to save.</div>
+    </div>
+
+    <div class="group no-print">
+      <h3>Keyboard help</h3>
+      <div class="small">Tab to buttons and press Enter. Drag files or press Space on dropzones to open file picker.</div>
+    </div>
+  </aside>
+
+  <main aria-live="polite">
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="summary" role="tab" aria-selected="true">Summary</button>
+      <button class="tab" data-tab="detail" role="tab" aria-selected="false">Detail</button>
+      <button class="tab" data-tab="costing" role="tab" aria-selected="false">Costing</button>
+    </div>
+
+    <section id="summary" class="section active" role="tabpanel" aria-labelledby="Summary">
+      <div class="group">
+        <h2>Executive Summary</h2>
+        <div id="execSummary" class="small">Load data and run the analysis to generate a narrative.</div>
+      </div>
+
+      <div class="metrics" id="metricCards">
+        <div class="card"><h4>Avg Base Compa-Ratio</h4><div class="num" id="mBaseComp">—</div></div>
+        <div class="card"><h4>Avg TTC Market Index</h4><div class="num" id="mTtcIdx">—</div></div>
+        <div class="card"><h4>Avg TDC Market Index</h4><div class="num" id="mTdcIdx">—</div></div>
+        <div class="card"><h4>Employee Count</h4><div class="num" id="mCount">—</div></div>
+      </div>
+
+      <div class="group">
+        <h2>Compa-Ratio Distribution</h2>
+        <canvas id="chartComp"></canvas>
+      </div>
+
+      <div class="group">
+        <h2>Market Index by Job</h2>
+        <canvas id="chartJobs"></canvas>
+      </div>
+    </section>
+
+    <section id="detail" class="section" role="tabpanel" aria-labelledby="Detail">
+      <div class="group">
+        <h2>Job Pricing Detail</h2>
+        <div class="small">Avg pay vs Market P50. Color rules: &lt;90 or &gt;110 red, 90–95 or 105–110 amber, 95–105 green.</div>
+        <div style="overflow:auto">
+          <table id="jobTable"></table>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Structure Analysis</h2>
+        <div class="small">Company Midpoint vs Market Base P50. Amber at &lt;98 or &gt;102, Red at &lt;90 or &gt;110, Green otherwise.</div>
+        <div style="overflow:auto">
+          <table id="structTable"></table>
+        </div>
+      </div>
+    </section>
+
+    <section id="costing" class="section" role="tabpanel" aria-labelledby="Costing">
+      <div class="group">
+        <h2>Model Result</h2>
+        <div id="modelSummary" class="small">Run analysis, choose a rule, then Apply & Cost Model.</div>
+      </div>
+
+      <div class="metrics">
+        <div class="card"><h4>Total Cost to Minimum</h4><div class="num" id="cCost">—</div></div>
+        <div class="card"><h4>Employees Impacted</h4><div class="num" id="cImp">—</div></div>
+        <div class="card"><h4>Cost as % of Payroll</h4><div class="num" id="cPct">—</div></div>
+        <div class="card"><h4>New Min Coverage</h4><div class="num" id="cCoverage">—</div></div>
+      </div>
+
+      <div class="group">
+        <h3>New Ranges Preview</h3>
+        <div style="overflow:auto">
+          <table id="modelTable"></table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Edit Sample Modal -->
+<div class="modal" id="editModal" aria-hidden="true" aria-labelledby="editTitle" role="dialog">
+  <div class="modal-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <h2 id="editTitle">Edit Sample Data</h2>
+      <button class="btn ghost" id="closeModalBtn" aria-label="Close">Close</button>
+    </div>
+    <div class="grid-2">
+      <div>
+        <label>Job Catalog</label>
+        <textarea id="txtJob"></textarea>
+      </div>
+      <div>
+        <label>Employee Data</label>
+        <textarea id="txtEmp"></textarea>
+      </div>
+      <div>
+        <label>Market Data</label>
+        <textarea id="txtMkt"></textarea>
+      </div>
+      <div>
+        <label>Salary Structures</label>
+        <textarea id="txtStr"></textarea>
+      </div>
+    </div>
+    <div class="right" style="margin-top:10px">
+      <button class="btn ghost" id="resetToDefault">Reset to Default</button>
+      <button class="btn" id="applyEdits">Apply Edits</button>
+    </div>
+  </div>
+</div>
+
+<!-- Prompt Modal -->
+<div class="modal" id="promptModal" aria-hidden="true" role="dialog" aria-labelledby="promptTitle">
+  <div class="modal-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <h2 id="promptTitle">Educational Prompt View</h2>
+      <button class="btn ghost" id="closePromptBtn" aria-label="Close">Close</button>
+    </div>
+    <pre class="formula" id="promptText" style="white-space:pre-wrap"></pre>
+  </div>
+</div>
+
+<script>
+/* =========================
+   Sample CSVs (inlined)
+   ========================= */
+const DEFAULT_CSV = {
+  job_catalog:
+`job_code,job_profile_title
+ENG-P5,Senior Software Engineer
+ENG-P6,Staff Software Engineer
+ML-P6,Staff ML Engineer
+DS-P5,Senior Data Scientist
+PM-P5,Senior Product Manager
+PM-P6,Staff Product Manager
+HR-P4,Compensation Analyst
+HR-P6,Senior Compensation Manager
+FIN-P5,Senior Finance Analyst
+CS-P4,Customer Support Specialist`,
+
+  employee_data:
+`employee_id,job_code,salary,bonus_target_percent,annual_lti_target_value
+E001,ENG-P5,158000,10,70000
+E002,ENG-P5,162000,10,70000
+E003,ENG-P5,150000,10,65000
+E004,ENG-P6,195000,12,120000
+E005,ENG-P6,205000,12,120000
+E006,ML-P6,208000,12,140000
+E007,ML-P6,220000,12,150000
+E008,DS-P5,168000,10,80000
+E009,DS-P5,172000,10,80000
+E010,PM-P5,170000,12,90000
+E011,PM-P5,176000,12,90000
+E012,PM-P6,210000,15,140000
+E013,PM-P6,218000,15,150000
+E014,HR-P4,98000,8,30000
+E015,HR-P4,102000,8,30000
+E016,HR-P6,160000,12,80000
+E017,FIN-P5,138000,10,60000
+E018,FIN-P5,142000,10,60000
+E019,CS-P4,76000,5,15000
+E020,CS-P4,80000,5,15000
+E021,ENG-P5,155000,10,65000
+E022,ENG-P5,159000,10,65000
+E023,ENG-P6,200000,12,120000
+E024,ENG-P6,198000,12,120000
+E025,ML-P6,215000,12,150000
+E026,DS-P5,165000,10,80000
+E027,PM-P5,169000,12,90000
+E028,PM-P6,212000,15,140000
+E029,HR-P4,99000,8,30000
+E030,HR-P6,162000,12,80000
+E031,FIN-P5,140000,10,60000
+E032,CS-P4,82000,5,15000
+E033,CS-P4,78000,5,15000
+E034,ENG-P5,151000,10,65000
+E035,PM-P5,171000,12,90000
+E036,DS-P5,170000,10,80000
+E037,FIN-P5,139000,10,60000
+E038,HR-P4,100000,8,30000
+E039,ENG-P6,203000,12,120000
+E040,PM-P6,214000,15,140000`,
+
+  market_data:
+`job_code,base_p25,base_p50,base_p65,base_p75,ttc_p25,ttc_p50,ttc_p65,ttc_p75,lti_p25,lti_p50,lti_p65,lti_p75,tdc_p25,tdc_p50,tdc_p65,tdc_p75
+ENG-P5,145000,160000,170000,178000,165000,182000,194000,205000,60000,70000,80000,90000,225000,252000,274000,295000
+ENG-P6,185000,200000,210000,220000,210000,230000,245000,260000,110000,120000,130000,140000,320000,350000,375000,400000
+ML-P6,200000,215000,230000,240000,230000,250000,270000,285000,130000,140000,155000,165000,360000,390000,425000,450000
+DS-P5,155000,168000,178000,185000,175000,190000,205000,215000,70000,80000,90000,95000,245000,270000,295000,310000
+PM-P5,160000,172000,180000,188000,185000,200000,215000,225000,80000,90000,95000,100000,265000,290000,310000,325000
+PM-P6,200000,215000,228000,238000,235000,255000,275000,290000,130000,140000,150000,160000,365000,395000,425000,450000
+HR-P4,90000,100000,108000,112000,98000,108000,116000,120000,25000,30000,35000,40000,123000,138000,151000,160000
+HR-P6,150000,165000,175000,182000,175000,195000,210000,220000,70000,80000,90000,95000,245000,275000,300000,315000
+FIN-P5,125000,140000,150000,158000,145000,160000,175000,185000,50000,60000,70000,75000,195000,220000,245000,260000
+CS-P4,70000,78000,82000,86000,74000,82000,86000,90000,12000,15000,18000,20000,86000,97000,104000,110000`,
+
+  comp_structures:
+`job_code,min_salary,mid_salary,max_salary
+ENG-P5,140000,160000,180000
+ENG-P6,180000,200000,220000
+ML-P6,195000,215000,235000
+DS-P5,150000,168000,186000
+PM-P5,155000,172000,189000
+PM-P6,195000,215000,235000
+HR-P4,90000,100000,110000
+HR-P6,150000,165000,180000
+FIN-P5,126000,140000,154000
+CS-P4,70000,78000,86000`
+};
+
+let SAMPLE_CSV = JSON.parse(JSON.stringify(DEFAULT_CSV));
+
+/* =========================
+   Simple CSV parser/formatter
+   ========================= */
+function parseCSV(text){
+  // basic CSV, supports simple quoted fields
+  const rows=[]; let r=[],field="",q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i], n=text[i+1];
+    if(c==='\"'){
+      if(q && n==='\"'){field+='\"';i++}
+      else q=!q;
+    } else if(c===',' && !q){r.push(field);field=''}
+    else if((c==='\n' || c==='\r') && !q){
+      if(field!=='' || r.length>0){r.push(field);rows.push(r);r=[];field=''}
+    } else field+=c;
+  }
+  if(field!=='' || r.length>0){r.push(field);rows.push(r)}
+  const header=rows.shift().map(h=>h.trim());
+  return rows.filter(row=>row.length&&row.some(c=>c!=="")).map(row=>{
+    const obj={}; header.forEach((h,i)=>obj[h]=row[i]?.trim()??""); return obj;
+  });
+}
+function toCSV(rows){
+  if(!rows.length) return "";
+  const headers=Object.keys(rows[0]);
+  const esc=v => {
+    const s=String(v??"");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  };
+  const lines=[headers.join(",")];
+  rows.forEach(r=>lines.push(headers.map(h=>esc(r[h])).join(",")));
+  return lines.join("\n");
+}
+
+/* =========================
+   State
+   ========================= */
+const state = {
+  files:{}, data:{}, merged:[], results:null, model:null, agingFactor:1
+};
+
+/* =========================
+   UI Elements
+   ========================= */
+const uploadList = [
+  {key:"job_catalog", label:"Job Catalog (job_code, job_profile_title)"},
+  {key:"employee_data", label:"Employee Data (employee_id, job_code, salary, bonus_target_percent, annual_lti_target_value)"},
+  {key:"market_data", label:"Market Data (base_p50, ttc_p50, tdc_p50 etc)"},
+  {key:"comp_structures", label:"Salary Structures (min, mid, max)"}
+];
+
+const el = {
+  uploaders: document.getElementById('uploaders'),
+  runBtn: document.getElementById('runBtn'),
+  runSpin: document.getElementById('runSpin'),
+  error: document.getElementById('errorBanner'),
+  errorText: document.getElementById('errorText'),
+  loadSample: document.getElementById('loadSampleBtn'),
+  editSample: document.getElementById('editSampleBtn'),
+  resetSample: document.getElementById('resetSampleBtn'),
+  dlCsv: document.getElementById('dlCsvBtn'),
+  dlPdf: document.getElementById('dlPdfBtn'),
+  surveyDate: document.getElementById('surveyDate'),
+  ageDate: document.getElementById('ageDate'),
+  annualRate: document.getElementById('annualRate'),
+  agingFormula: document.getElementById('agingFormula'),
+  tabs: Array.from(document.querySelectorAll('.tab')),
+  sections: {
+    summary: document.getElementById('summary'),
+    detail: document.getElementById('detail'),
+    costing: document.getElementById('costing')
+  },
+  cards:{
+    base: document.getElementById('mBaseComp'),
+    ttc: document.getElementById('mTtcIdx'),
+    tdc: document.getElementById('mTdcIdx'),
+    count: document.getElementById('mCount')
+  },
+  charts:{
+    comp: document.getElementById('chartComp'),
+    jobs: document.getElementById('chartJobs')
+  },
+  tables:{
+    job: document.getElementById('jobTable'),
+    struct: document.getElementById('structTable'),
+    model: document.getElementById('modelTable')
+  },
+  execSummary: document.getElementById('execSummary'),
+  // costing
+  rule: document.getElementById('rule'),
+  pctWrap: document.getElementById('percentWrap'),
+  pct: document.getElementById('pct'),
+  applyModel: document.getElementById('applyModelBtn'),
+  cCost: document.getElementById('cCost'),
+  cImp: document.getElementById('cImp'),
+  cPct: document.getElementById('cPct'),
+  cCoverage: document.getElementById('cCoverage'),
+  modelSummary: document.getElementById('modelSummary'),
+  // modals
+  editModal: document.getElementById('editModal'),
+  promptModal: document.getElementById('promptModal'),
+  closeModalBtn: document.getElementById('closeModalBtn'),
+  closePromptBtn: document.getElementById('closePromptBtn'),
+  txtJob: document.getElementById('txtJob'),
+  txtEmp: document.getElementById('txtEmp'),
+  txtMkt: document.getElementById('txtMkt'),
+  txtStr: document.getElementById('txtStr'),
+  resetToDefault: document.getElementById('resetToDefault'),
+  applyEdits: document.getElementById('applyEdits'),
+  promptText: document.getElementById('promptText'),
+  viewPromptBtn: document.getElementById('viewPromptBtn'),
+};
+
+/* =========================
+   Helpers
+   ========================= */
+function $(sel, root=document){return root.querySelector(sel)}
+function showError(msg){
+  el.errorText.textContent=msg; el.error.classList.add('show');
+  setTimeout(()=>el.error.classList.remove('show'), 3500);
+}
+function bytes(x){return (x/1024).toFixed(1)+' KB'}
+function roundTo(v, step=100){return Math.round(v/step)*step}
+function fmtMoney(v){return '$'+(Math.round(v)).toLocaleString()}
+function fmtPct(v, d=1){return (v).toFixed(d)+'%'}
+function monthsBetween(to, from){ // whole months difference
+  const a=new Date(from), b=new Date(to);
+  let months=(b.getFullYear()-a.getFullYear())*12 + (b.getMonth()-a.getMonth());
+  // adjust if day-of-month of 'to' is before 'from'
+  if(b.getDate() < a.getDate()) months -= 1;
+  return months;
+}
+function colorClass(pct, lo=95, hi=105){
+  if(pct<90 || pct>110) return 'red';
+  if(pct<lo || pct>hi) return 'amber';
+  return 'green';
+}
+function colorClassStruct(pct){
+  if(pct<90 || pct>110) return 'red';
+  if(pct<98 || pct>102) return 'amber';
+  return 'green';
+}
+
+/* =========================
+   Build uploaders
+   ========================= */
+function buildUploaders(){
+  el.uploaders.innerHTML='';
+  uploadList.forEach(item=>{
+    const zone=document.createElement('div');
+    zone.className='uploader'; zone.tabIndex=0;
+    zone.dataset.key=item.key;
+    zone.innerHTML=`
+      <div class="up-head">
+        <div class="up-title">${item.label}</div>
+        <div class="filemeta" id="meta-${item.key}">No file</div>
+      </div>
+      <div class="controls-row">
+        <button class="btn ghost browse">Browse CSV</button>
+        <button class="btn ghost remove" disabled>Remove</button>
+      </div>
+      <input type="file" accept=".csv" aria-label="${item.label}">
+    `;
+    el.uploaders.appendChild(zone);
+
+    const input=$('input',zone);
+    const browse=$('.browse',zone);
+    const remove=$('.remove',zone);
+    const meta=$(`#meta-${item.key}`);
+
+    const setMeta=(name,size)=>{meta.textContent=name?`${name} • ${bytes(size)}`:'No file'}
+
+    browse.addEventListener('click',()=>input.click());
+    zone.addEventListener('keydown',(e)=>{if(e.code==='Space'){e.preventDefault();input.click();}});
+    input.addEventListener('change',e=>{
+      const f=e.target.files[0];
+      if(!f) return;
+      if(!f.name.toLowerCase().endsWith('.csv')){ showError('Please select a .csv file'); input.value=''; return; }
+      const reader=new FileReader();
+      zone.setAttribute('aria-busy','true');
+      reader.onload=()=>{ state.files[item.key]={name:f.name, size:f.size, text:reader.result}; setMeta(f.name,f.size); remove.disabled=false; zone.removeAttribute('aria-busy'); checkReady();};
+      reader.readAsText(f);
+    });
+
+    // drag-drop
+    ['dragenter','dragover'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();zone.classList.add('drag')}));
+    ;['dragleave','drop'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();zone.classList.remove('drag')}));
+    zone.addEventListener('drop',e=>{
+      const f=e.dataTransfer.files[0]; if(!f) return;
+      if(!f.name.toLowerCase().endsWith('.csv')){ showError('Please drop a .csv file'); return; }
+      const reader=new FileReader();
+      zone.setAttribute('aria-busy','true');
+      reader.onload=()=>{ state.files[item.key]={name:f.name, size:f.size, text:reader.result}; setMeta(f.name,f.size); remove.disabled=false; zone.removeAttribute('aria-busy'); checkReady();};
+      reader.readAsText(f);
+    });
+
+    remove.addEventListener('click',()=>{
+      state.files[item.key]=null; setMeta(); remove.disabled=true; checkReady();
+    });
+  });
+}
+
+/* =========================
+   Sample data load/edit/reset
+   ========================= */
+function loadSample(){
+  // populate state.files with in-memory CSVs
+  uploadList.forEach(u=>{
+    const text=SAMPLE_CSV[u.key];
+    state.files[u.key]={name:`${u.key}.csv`, size:text.length, text};
+    const meta=document.getElementById(`meta-${u.key}`);
+    if(meta) meta.textContent=`${u.key}.csv • ${bytes(text.length)}`;
+    const zone=[...el.uploaders.children].find(z=>z.dataset.key===u.key);
+    if(zone) $('.remove',zone).disabled=false;
+  });
+  checkReady();
+}
+function openEditModal(){
+  el.txtJob.value=SAMPLE_CSV.job_catalog;
+  el.txtEmp.value=SAMPLE_CSV.employee_data;
+  el.txtMkt.value=SAMPLE_CSV.market_data;
+  el.txtStr.value=SAMPLE_CSV.comp_structures;
+  el.editModal.classList.add('show'); el.editModal.setAttribute('aria-hidden','false');
+}
+function closeModal(){ el.editModal.classList.remove('show'); el.editModal.setAttribute('aria-hidden','true'); }
+function openPromptModal(text){
+  el.promptText.textContent=text;
+  el.promptModal.classList.add('show'); el.promptModal.setAttribute('aria-hidden','false');
+}
+function closePrompt(){ el.promptModal.classList.remove('show'); el.promptModal.setAttribute('aria-hidden','true'); }
+
+/* =========================
+   Assumptions and aging
+   ========================= */
+function initDates(){
+  const now=new Date();
+  const year=now.getFullYear();
+  const survey=`${year}-04-01`;
+  const nextYear=year+1;
+  const age=`${nextYear}-01-01`;
+  el.surveyDate.value=survey;
+  el.ageDate.value=age;
+  updateAging();
+}
+function updateAging(){
+  const survey=el.surveyDate.value, age=el.ageDate.value, rate=parseFloat(el.annualRate.value||'0');
+  if(!survey || !age){el.agingFormula.textContent='Select dates to compute aging factor.'; return;}
+  const m=monthsBetween(age, survey);
+  const factor=Math.pow(1+(rate/100), m/12);
+  state.agingFactor=factor;
+  el.agingFormula.textContent=`monthsToAge = ${m}
+agingFactor = (1 + ${rate}/100) ^ (${m}/12) = ${factor.toFixed(4)}`
+}
+
+/* =========================
+   Data processing
+   ========================= */
+function checkReady(){
+  const ready = uploadList.every(u => state.files[u.key]);
+  el.runBtn.disabled=!ready;
+  el.applyModel.disabled = !state.results;
+  el.dlCsv.disabled = !state.results;
+  el.dlPdf.disabled = !state.results;
+}
+function readAll(){
+  try{
+    state.data.job_catalog=parseCSV(state.files.job_catalog.text);
+    state.data.employee_data=parseCSV(state.files.employee_data.text).map(r=>({
+      ...r,
+      salary:+r.salary,
+      bonus_target_percent:+r.bonus_target_percent,
+      annual_lti_target_value:+r.annual_lti_target_value
+    }));
+    state.data.market_data=parseCSV(state.files.market_data.text).map(r=>{
+      const o={...r}; for(const k of Object.keys(o)){
+        if(k!=='job_code' && o[k]!=="") o[k]=+o[k];
+      } return o;
+    });
+    state.data.comp_structures=parseCSV(state.files.comp_structures.text).map(r=>({
+      ...r,
+      min_salary:+r.min_salary, mid_salary:+r.mid_salary, max_salary:+r.max_salary
+    }));
+  }catch(e){
+    throw new Error('CSV parse error. Check column headers and formats.');
+  }
+}
+
+function mergeData(){
+  const jc = Object.fromEntries(state.data.job_catalog.map(r=>[r.job_code, r.job_profile_title]));
+  const mkt = Object.fromEntries(state.data.market_data.map(r=>[r.job_code, r]));
+  const str = Object.fromEntries(state.data.comp_structures.map(r=>[r.job_code, r]));
+  const rows = state.data.employee_data.map(e=>{
+    const job=e.job_code;
+    const title=jc[job] || job;
+    const mk=mkt[job];
+    const st=str[job];
+    return {...e, job_profile_title:title, _mkt:mk, _str:st};
+  }).filter(r=>r._mkt && r._str); // keep rows we can price
+  state.merged=rows;
+}
+
+function computeResults(){
+  const aged = {}; // aged market by job
+  state.data.market_data.forEach(m=>{
+    aged[m.job_code]={
+      base_p50: m.base_p50 * state.agingFactor,
+      ttc_p50: m.ttc_p50 * state.agingFactor,
+      tdc_p50: m.tdc_p50 * state.agingFactor
+    };
+  });
+
+  // per employee metrics
+  const perEmp = state.merged.map(r=>{
+    const mid=r._str.mid_salary;
+    const baseComp = r.salary / mid * 100;
+    const ttc = r.salary + r.salary*(r.bonus_target_percent/100);
+    const tdc = ttc + r.annual_lti_target_value;
+    const mk = aged[r.job_code];
+    const baseIdx = r.salary / mk.base_p50 * 100;
+    const ttcIdx = ttc / mk.ttc_p50 * 100;
+    const tdcIdx = tdc / mk.tdc_p50 * 100;
+    return {...r, _mid:mid, _ttc:ttc, _tdc:tdc, _baseIdx:baseIdx, _ttcIdx:ttcIdx, _tdcIdx:tdcIdx, _baseComp:baseComp};
+  });
+
+  // summary metrics
+  const avg = (arr, f)=> arr.length? arr.reduce((a,b)=>a+f(b),0)/arr.length : 0;
+  const avgBaseComp = avg(perEmp, x=>x._baseComp);
+  const avgTtcIdx = avg(perEmp, x=>x._ttcIdx);
+  const avgTdcIdx = avg(perEmp, x=>x._tdcIdx);
+
+  // distribution for chart buckets (70..130 step 5)
+  const buckets=[]; for(let b=70;b<=130;b+=5) buckets.push({b, n:0});
+  perEmp.forEach(x=>{
+    const v=Math.max(70, Math.min(130, Math.round(x._baseComp/5)*5));
+    const i=buckets.findIndex(y=>y.b===v); if(i>=0) buckets[i].n++;
+  });
+
+  // job-level table
+  const byJob={};
+  perEmp.forEach(x=>{
+    if(!byJob[x.job_code]) byJob[x.job_code]={job_code:x.job_code,title:x.job_profile_title, ee:0, base:0, ttc:0, tdc:0};
+    const j=byJob[x.job_code];
+    j.ee++; j.base+=x.salary; j.ttc+=x._ttc; j.tdc+=x._tdc;
+  });
+  const jobRows = Object.values(byJob).map(j=>{
+    const mk=aged[j.job_code];
+    const baseAvg=j.base/j.ee, ttcAvg=j.ttc/j.ee, tdcAvg=j.tdc/j.ee;
+    const baseIdx = baseAvg / mk.base_p50 *100;
+    const ttcIdx  = ttcAvg  / mk.ttc_p50 *100;
+    const tdcIdx  = tdcAvg  / mk.tdc_p50 *100;
+    return {
+      job_code:j.job_code, job_profile_title:j.title, employees:j.ee,
+      base_avg:baseAvg, base_idx:baseIdx,
+      ttc_avg:ttcAvg, ttc_idx:ttcIdx,
+      tdc_avg:tdcAvg, tdc_idx:tdcIdx
+    };
+  }).sort((a,b)=>a.job_code.localeCompare(b.job_code));
+
+  // structure analysis
+  const structRows = state.data.comp_structures.map(s=>{
+    const mk=aged[s.job_code]; if(!mk) return null;
+    const midToMkt = s.mid_salary / mk.base_p50 * 100;
+    const spread = (s.max_salary - s.min_salary) / s.mid_salary * 100;
+    return {job_code:s.job_code, title:(state.data.job_catalog.find(j=>j.job_code===s.job_code)?.job_profile_title)||s.job_code,
+      mid:s.mid_salary, mkt_p50:mk.base_p50, mid_to_mkt:midToMkt, spread:spread};
+  }).filter(Boolean).sort((a,b)=>a.job_code.localeCompare(b.job_code));
+
+  state.results = { perEmp, jobRows, structRows, buckets, avgBaseComp, avgTtcIdx, avgTdcIdx, count:perEmp.length, aged };
+}
+
+/* =========================
+   Renderers
+   ========================= */
+function renderSummary(){
+  const r=state.results;
+  el.cards.base.textContent = fmtPct(r.avgBaseComp,1);
+  el.cards.ttc.textContent  = fmtPct(r.avgTtcIdx,1);
+  el.cards.tdc.textContent  = fmtPct(r.avgTdcIdx,1);
+  el.cards.count.textContent = r.count.toLocaleString();
+
+  // narrative
+  const tilt = r.avgTtcIdx<95? 'below' : r.avgTtcIdx>105? 'above' : 'near';
+  const hot = r.jobRows.slice().sort((a,b)=>Math.abs(100-a.ttc_idx)-Math.abs(100-b.ttc_idx))[0];
+  el.execSummary.textContent =
+`Overall base compa-ratio averages ${fmtPct(r.avgBaseComp,1)}. TTC market index is ${fmtPct(r.avgTtcIdx,1)} and TDC is ${fmtPct(r.avgTdcIdx,1)} across ${r.count} employees. This portfolio prices ${tilt} the market median.
+Largest variance by TTC appears in ${hot.job_profile_title} (${hot.job_code}) at ${fmtPct(hot.ttc_idx,1)}. Consider targeted structure adjustments or selective refresh for roles with persistent variance.`;
+
+  drawCompChart(r.buckets);
+  drawJobsChart(r.jobRows);
+}
+
+function drawCompChart(buckets){
+  const c=el.charts.comp, ctx=c.getContext('2d');
+  const w=c.width = c.clientWidth*2, h=c.height=c.clientHeight*2;
+  ctx.clearRect(0,0,w,h);
+  const maxN=Math.max(...buckets.map(b=>b.n),1);
+  const pad=40;
+  const barW=(w-pad*2)/buckets.length*0.8;
+  // axes
+  ctx.strokeStyle='#3a4254'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(pad,h-pad); ctx.lineTo(w-pad,h-pad); ctx.moveTo(pad,h-pad); ctx.lineTo(pad,pad); ctx.stroke();
+  // bars
+  buckets.forEach((b,i)=>{
+    const x=pad + (i+0.1)*((w-pad*2)/buckets.length);
+    const bh = (h-pad*2) * (b.n/maxN);
+    ctx.fillStyle='#62d0ff';
+    ctx.fillRect(x, h-pad-bh, barW, bh);
+  });
+  // labels
+  ctx.fillStyle='#a8b0bd'; ctx.font='24px system-ui';
+  buckets.forEach((b,i)=>{
+    const x=pad + (i+0.5)*((w-pad*2)/buckets.length);
+    if(i%3===0){ ctx.fillText(b.b, x-18, h-pad+28); }
+  });
+  ctx.fillText('Compa % vs midpoint', w/2-120, h-6);
+}
+
+function drawJobsChart(jobRows){
+  const c=el.charts.jobs, ctx=c.getContext('2d');
+  const w=c.width = c.clientWidth*2, h=c.height=c.clientHeight*2;
+  ctx.clearRect(0,0,w,h);
+  const pad=50;
+  const jobs=jobRows.slice(0,10); // keep it readable
+  const groups=jobs.length;
+  const barW= (w-pad*2)/(groups*4); // 3 bars + gap
+  const max= Math.max(120, ...jobs.flatMap(j=>[j.base_idx,j.ttc_idx,j.tdc_idx]));
+  // axes
+  ctx.strokeStyle='#3a4254'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(pad,h-pad); ctx.lineTo(w-pad,h-pad); ctx.moveTo(pad,pad); ctx.lineTo(pad,h-pad); ctx.stroke();
+  // 100% reference line
+  const y100 = h-pad - (100/max)*(h-pad*2);
+  ctx.strokeStyle='#5a647a'; ctx.setLineDash([8,8]);
+  ctx.beginPath(); ctx.moveTo(pad,y100); ctx.lineTo(w-pad,y100); ctx.stroke(); ctx.setLineDash([]);
+
+  // bars
+  jobs.forEach((j,gi)=>{
+    const baseX = pad + gi*4*barW + barW*0.5;
+    const vals=[j.base_idx,j.ttc_idx,j.tdc_idx];
+    const fills=['#8df7c1','#62d0ff','#ffb74d'];
+    vals.forEach((v,i)=>{
+      const x=baseX + i*barW;
+      const bh = (v/max)*(h-pad*2);
+      ctx.fillStyle=fills[i];
+      ctx.fillRect(x, h-pad-bh, barW*0.9, bh);
+    });
+    // job code label
+    ctx.fillStyle='#a8b0bd'; ctx.font='22px system-ui';
+    ctx.save(); ctx.translate(baseX+barW, h-pad+32); ctx.rotate(-Math.PI/6); ctx.fillText(j.job_code, 0, 0); ctx.restore();
+  });
+  ctx.fillStyle='#a8b0bd'; ctx.fillText('Market Index % (Base/TTC/TDC) • ref line at 100%', w/2-220, h-6);
+}
+
+function renderJobTable(){
+  const t=el.tables.job;
+  const r=state.results.jobRows;
+  const headers=['Job Code','Job Profile','# EEs','Avg Base','Base Index %','Avg TTC','TTC Index %','Avg TDC','TDC Index %'];
+  t.innerHTML = `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>` +
+    r.map(row=>{
+      const baseCls=colorClass(row.base_idx), ttcCls=colorClass(row.ttc_idx), tdcCls=colorClass(row.tdc_idx);
+      return `<tr>
+        <td>${row.job_code}</td>
+        <td>${row.job_profile_title}</td>
+        <td>${row.employees}</td>
+        <td>${fmtMoney(roundTo(row.base_avg,100))}</td>
+        <td><span class="pill ${baseCls}">${fmtPct(row.base_idx,1)}</span></td>
+        <td>${fmtMoney(roundTo(row.ttc_avg,100))}</td>
+        <td><span class="pill ${ttcCls}">${fmtPct(row.ttc_idx,1)}</span></td>
+        <td>${fmtMoney(roundTo(row.tdc_avg,100))}</td>
+        <td><span class="pill ${tdcCls}">${fmtPct(row.tdc_idx,1)}</span></td>
+      </tr>`;
+    }).join('') + `</tbody>`;
+}
+
+function renderStructTable(){
+  const t=el.tables.struct;
+  const r=state.results.structRows;
+  const headers=['Job Code','Job Profile','Company Midpoint','Market Base P50 (Aged)','Midpoint to Market %','Range Spread %'];
+  t.innerHTML = `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>` +
+    r.map(row=>{
+      const cls=colorClassStruct(row.mid_to_mkt);
+      return `<tr>
+        <td>${row.job_code}</td>
+        <td>${row.title}</td>
+        <td>${fmtMoney(roundTo(row.mid,100))}</td>
+        <td>${fmtMoney(roundTo(row.mkt_p50,100))}</td>
+        <td><span class="pill ${cls}">${fmtPct(row.mid_to_mkt,1)}</span></td>
+        <td>${fmtPct(row.spread,1)}</td>
+      </tr>`;
+    }).join('') + `</tbody>`;
+}
+
+/* =========================
+   Strategic Modeling
+   ========================= */
+function applyModel(){
+  if(!state.results) return;
+  const rule=el.rule.value;
+  const pct=parseFloat(el.pct.value||'0');
+  const current=state.data.comp_structures;
+  const aged=state.results.aged;
+
+  const preview = current.map(s=>{
+    const mk=aged[s.job_code]; if(!mk) return null;
+    const oldSpread=(s.max_salary - s.min_salary)/s.mid_salary; // ratio
+    let newMid = s.mid_salary;
+    if(rule==='align') newMid = mk.base_p50;
+    if(rule==='increase') newMid = s.mid_salary * (1+pct/100);
+    const newMin = newMid * (1 - oldSpread/2);
+    const newMax = newMid * (1 + oldSpread/2);
+    return {job_code:s.job_code, title:(state.data.job_catalog.find(j=>j.job_code===s.job_code)?.job_profile_title)||s.job_code,
+      old_min:s.min_salary, old_mid:s.mid_salary, old_max:s.max_salary,
+      new_min:newMin, new_mid:newMid, new_max:newMax};
+  }).filter(Boolean);
+
+  // cost to minimum
+  let totalCost=0, impacted=0, payroll=0, covered=0;
+  state.merged.forEach(emp=>{
+    const p=preview.find(p=>p.job_code===emp.job_code);
+    if(!p) return;
+    payroll += emp.salary;
+    if(emp.salary < p.new_min){ totalCost += (p.new_min - emp.salary); impacted++; }
+    else covered++;
+  });
+  const pctPayroll = payroll? (totalCost/payroll*100):0;
+
+  state.model={rule,pct, preview, totalCost, impacted, pctPayroll, covered, total: state.merged.length};
+  renderModel();
+}
+
+function renderModel(){
+  const m=state.model;
+  el.cCost.textContent = fmtMoney(roundTo(m.totalCost,1));
+  el.cImp.textContent = m.impacted.toLocaleString();
+  el.cPct.textContent = fmtPct(m.pctPayroll,2);
+  el.cCoverage.textContent = `${m.covered}/${m.total}`;
+
+  const ruleText = m.rule==='align'
+    ? 'Midpoints aligned to aged Market Base P50.'
+    : `Midpoints increased by ${m.pct}% preserving existing spreads.`;
+  el.modelSummary.textContent = `Scenario: ${ruleText} Estimated cost to move employees up to new minimum is ${fmtMoney(roundTo(m.totalCost,1))}, which is ${fmtPct(m.pctPayroll,2)} of current base payroll. ${m.impacted} employees are below new minimum across priced jobs.`;
+
+  const headers=['Job Code','Job Profile','Old Min','Old Mid','Old Max','New Min','New Mid','New Max'];
+  el.tables.model.innerHTML = `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>` +
+    m.preview.map(p=>`<tr>
+      <td>${p.job_code}</td>
+      <td>${p.title}</td>
+      <td>${fmtMoney(roundTo(p.old_min,100))}</td>
+      <td>${fmtMoney(roundTo(p.old_mid,100))}</td>
+      <td>${fmtMoney(roundTo(p.old_max,100))}</td>
+      <td>${fmtMoney(roundTo(p.new_min,100))}</td>
+      <td>${fmtMoney(roundTo(p.new_mid,100))}</td>
+      <td>${fmtMoney(roundTo(p.new_max,100))}</td>
+    </tr>`).join('') + `</tbody>`;
+}
+
+/* =========================
+   Exports
+   ========================= */
+function exportCSV(){
+  const jobs = state.results.jobRows.map(j=>({
+    job_code:j.job_code, job_profile_title:j.job_profile_title, employees:j.employees,
+    avg_base:Math.round(j.base_avg), base_index_pct:j.base_idx.toFixed(1),
+    avg_ttc:Math.round(j.ttc_avg), ttc_index_pct:j.ttc_idx.toFixed(1),
+    avg_tdc:Math.round(j.tdc_avg), tdc_index_pct:j.tdc_idx.toFixed(1)
+  }));
+  const structs = state.results.structRows.map(s=>({
+    job_code:s.job_code, job_profile_title:s.title,
+    company_midpoint:Math.round(s.mid), market_base_p50_aged:Math.round(s.mkt_p50),
+    midpoint_to_market_pct:s.mid_to_mkt.toFixed(1), range_spread_pct:s.spread.toFixed(1)
+  }));
+  const combined = [{section:'JobPricing'}, ...jobs, {section:'StructureAnalysis'}, ...structs];
+  const csv = toCSV(combined);
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='market_pricing_results.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+function exportPDF(){
+  window.print(); // uses @media print
+}
+
+/* =========================
+   Events
+   ========================= */
+function runAnalysis(){
+  try{
+    el.runBtn.disabled=true; el.runSpin.style.display='inline-block';
+    el.error.classList.remove('show');
+    readAll();
+    mergeData();
+    computeResults();
+    renderSummary();
+    renderJobTable();
+    renderStructTable();
+    el.applyModel.disabled=false;
+    el.dlCsv.disabled=false;
+    el.dlPdf.disabled=false;
+  }catch(e){
+    showError(e.message);
+  }finally{
+    el.runBtn.disabled=false; el.runSpin.style.display='none';
+  }
+}
+
+function setupTabs(){
+  el.tabs.forEach(t=>{
+    t.addEventListener('click',()=>{
+      el.tabs.forEach(x=>{x.classList.remove('active');x.setAttribute('aria-selected','false')});
+      t.classList.add('active'); t.setAttribute('aria-selected','true');
+      Object.values(el.sections).forEach(s=>s.classList.remove('active'));
+      el.sections[t.dataset.tab].classList.add('active');
+    });
+  });
+}
+
+function setup(){
+  buildUploaders();
+  initDates(); updateAging(); loadSample();
+
+  el.surveyDate.addEventListener('change',updateAging);
+  el.ageDate.addEventListener('change',updateAging);
+  el.annualRate.addEventListener('input',updateAging);
+
+  el.runBtn.addEventListener('click', runAnalysis);
+  el.loadSample.addEventListener('click', ()=>{ loadSample(); showError('Sample data loaded.'); });
+  el.resetSample.addEventListener('click', ()=>{ SAMPLE_CSV=JSON.parse(JSON.stringify(DEFAULT_CSV)); loadSample(); showError('Sample data reset.'); });
+  el.editSample.addEventListener('click', openEditModal);
+  el.closeModalBtn.addEventListener('click', closeModal);
+  el.applyEdits.addEventListener('click', ()=>{
+    SAMPLE_CSV.job_catalog = el.txtJob.value.trim();
+    SAMPLE_CSV.employee_data = el.txtEmp.value.trim();
+    SAMPLE_CSV.market_data  = el.txtMkt.value.trim();
+    SAMPLE_CSV.comp_structures = el.txtStr.value.trim();
+    loadSample(); closeModal(); showError('Edits applied. Sample storage updated for this session.');
+  });
+  el.resetToDefault.addEventListener('click', ()=>{
+    el.txtJob.value=DEFAULT_CSV.job_catalog;
+    el.txtEmp.value=DEFAULT_CSV.employee_data;
+    el.txtMkt.value=DEFAULT_CSV.market_data;
+    el.txtStr.value=DEFAULT_CSV.comp_structures;
+  });
+
+  // prompt view
+  el.viewPromptBtn.addEventListener('click', ()=>{
+    const txt=`Market Pricing Analysis Prompt (educational view)
+• Join employee, job catalog, market, and structures by job_code
+• Apply agingFactor = (1 + annualRate/100)^(months/12)
+• For each employee:
+  baseCompa = salary / structureMid * 100
+  TTC = salary + salary*bonusPct
+  TDC = TTC + LTI target
+  BaseIndex = salary / marketBaseP50 * 100
+  TTCIndex  = TTC / marketTtcP50 * 100
+  TDCIndex  = TDC / marketTdcP50 * 100
+• Aggregate by job: average pay amounts and indices
+• Structure analysis: Midpoint vs Aged Market Base P50 and Range Spread
+• Charts: Compa distribution, Job indices with reference at 100%
+• Model: Align midpoints to market P50 or increase by %, preserve spreads, compute cost-to-minimum.`;
+    openPromptModal(txt);
+  });
+  el.closePromptBtn.addEventListener('click', closePrompt);
+
+  // costing
+  el.rule.addEventListener('change', ()=>{
+    el.pctWrap.style.display = el.rule.value==='increase' ? 'block' : 'none';
+  });
+  el.applyModel.addEventListener('click', applyModel);
+
+  // exports
+  el.dlCsv.addEventListener('click', exportCSV);
+  el.dlPdf.addEventListener('click', exportPDF);
+
+  setupTabs();
+  checkReady();
+}
+setup();
+</script>
+</body>
+</html>

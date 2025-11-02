@@ -457,6 +457,176 @@ FIN-P5,126000,140000,154000
 CS-P4,70000,78000,86000`
 };
 
+/* ==== Sample Data Generator + Load Sample override =================================
+   Paste this right after DEFAULT_CSV and before `let SAMPLE_CSV = ...`
+   It creates bigger randomized sample datasets and makes Load Sample Data use them.
+==================================================================================== */
+
+// Adjust this to try 150, 300, or 500 employees
+let SAMPLE_SIZE = 150;
+
+function buildSampleSets(totalEmployees = 150){
+  // Job catalog with families, base P50 anchors, typical bonus, LTI, and range spread
+  const JOBS = [
+    {code:'SDE01', title:'Software Engineer I',              fam:'ENG', base50: 90000, bonus:10, lti:10000,  spread:0.20},
+    {code:'SDE02', title:'Software Engineer II',             fam:'ENG', base50:120000, bonus:12, lti:25000,  spread:0.20},
+    {code:'SDE03', title:'Senior Software Engineer',         fam:'ENG', base50:160000, bonus:15, lti:55000,  spread:0.22},
+    {code:'SDE04', title:'Staff Software Engineer',          fam:'ENG', base50:205000, bonus:18, lti:100000, spread:0.24},
+    {code:'QA02',  title:'QA Engineer II',                   fam:'ENG', base50: 95000, bonus:10, lti: 8000,  spread:0.18},
+    {code:'DEVOPS3',title:'Senior DevOps Engineer',          fam:'ENG', base50:165000, bonus:15, lti:60000,  spread:0.22},
+    {code:'MLE02', title:'Machine Learning Engineer II',     fam:'ENG', base50:135000, bonus:12, lti:38000,  spread:0.22},
+    {code:'MLE03', title:'Senior Machine Learning Engineer', fam:'ENG', base50:175000, bonus:15, lti:75000,  spread:0.24},
+    {code:'DS02',  title:'Data Scientist II',                fam:'DS',  base50:140000, bonus:12, lti:40000,  spread:0.22},
+    {code:'PM01',  title:'Product Manager I',                fam:'PM',  base50:110000, bonus:12, lti:22000,  spread:0.20},
+    {code:'PM02',  title:'Product Manager II',               fam:'PM',  base50:145000, bonus:15, lti:50000,  spread:0.22},
+    {code:'PM03',  title:'Senior Product Manager',           fam:'PM',  base50:185000, bonus:18, lti:90000,  spread:0.24},
+    {code:'PMM02', title:'Product Marketing Manager II',     fam:'MKT', base50:115000, bonus:12, lti:22000,  spread:0.20},
+    {code:'PMM03', title:'Senior Product Marketing Manager', fam:'MKT', base50:150000, bonus:15, lti:45000,  spread:0.22},
+    {code:'TA02',  title:'Recruiter II',                     fam:'TA',  base50: 90000, bonus:18, lti: 6000,  spread:0.18},
+    {code:'TA03',  title:'Senior Recruiter',                 fam:'TA',  base50:110000, bonus:20, lti:12000,  spread:0.18},
+  ];
+
+  // Percentile bands around p50
+  function pctBands(p50){
+    const p25 = Math.round(p50 * 0.91);
+    const p65 = Math.round(p50 * 1.08);
+    const p75 = Math.round(p50 * 1.18);
+    return {p25, p50, p65, p75};
+  }
+
+  // Market rows: Base, TTC via bonus, LTI spread, then TDC = TTC + LTI
+  function buildMarketRows(){
+    const rows = [];
+    for(const j of JOBS){
+      const base = pctBands(j.base50);
+      const ttc = {
+        p25: Math.round(base.p25 * (1 + j.bonus/100)),
+        p50: Math.round(base.p50 * (1 + j.bonus/100)),
+        p65: Math.round(base.p65 * (1 + j.bonus/100)),
+        p75: Math.round(base.p75 * (1 + j.bonus/100)),
+      };
+      const lti = {
+        p25: Math.round(j.lti * 0.8),
+        p50: Math.round(j.lti),
+        p65: Math.round(j.lti * 1.2),
+        p75: Math.round(j.lti * 1.5),
+      };
+      const tdc = {
+        p25: ttc.p25 + lti.p25,
+        p50: ttc.p50 + lti.p50,
+        p65: ttc.p65 + lti.p65,
+        p75: ttc.p75 + lti.p75,
+      };
+      rows.push({
+        job_code:j.code,
+        base_p25:base.p25, base_p50:base.p50, base_p65:base.p65, base_p75:base.p75,
+        ttc_p25:ttc.p25, ttc_p50:ttc.p50, ttc_p65:ttc.p65, ttc_p75:ttc.p75,
+        lti_p25:lti.p25, lti_p50:lti.p50, lti_p65:lti.p65, lti_p75:lti.p75,
+        tdc_p25:tdc.p25, tdc_p50:tdc.p50, tdc_p65:tdc.p65, tdc_p75:tdc.p75
+      });
+    }
+    return rows;
+  }
+
+  // Structures centered on base P50 with per-job spread
+  function buildStructures(){
+    const rows=[];
+    for(const j of JOBS){
+      const mid = j.base50;
+      const half = Math.round(mid * (j.spread/2));
+      rows.push({
+        job_code:j.code,
+        min_salary: mid - half,
+        mid_salary: mid,
+        max_salary: mid + half
+      });
+    }
+    return rows;
+  }
+
+  // Employees distributed across jobs with realistic variance
+  function buildEmployees(N){
+    const rows = [];
+    let id = 1000;
+    const perJob = Math.floor(N / JOBS.length);
+    let remainder = N - perJob * JOBS.length;
+
+    function randNorm(mu, sigma){
+      // Box-Muller
+      const u1 = Math.random(); const u2 = Math.random();
+      const z0 = Math.sqrt(-2*Math.log(u1)) * Math.cos(2*Math.PI*u2);
+      return mu + z0*sigma;
+    }
+
+    for(const j of JOBS){
+      let count = perJob + (remainder > 0 ? 1 : 0);
+      if(remainder > 0) remainder--;
+
+      const mu = j.base50;
+      const sigma = mu * 0.12; // 12 percent standard deviation
+
+      for(let k=0;k<count;k++){
+        const raw = randNorm(mu, sigma);
+        const clipped = Math.max(mu*0.70, Math.min(raw, mu*1.35));
+        const salary = Math.round(clipped);
+        const bonus = Math.max(0, Math.round(j.bonus + (Math.random()*4 - 2))); // ±2 points
+        const lti = Math.max(0, Math.round(j.lti * (0.85 + Math.random()*0.30))); // ±15 percent to +30 percent
+
+        rows.push({
+          employee_id: id++,
+          job_code: j.code,
+          salary,
+          bonus_target_percent: bonus,
+          annual_lti_target_value: lti
+        });
+      }
+    }
+    return rows;
+  }
+
+  // Local CSV helper so we do not collide with your global toCSV
+  function toCSVLocal(rows){
+    if(!rows.length) return '';
+    const headers = Object.keys(rows[0]);
+    const lines = [headers.join(',')];
+    for(const r of rows){
+      lines.push(headers.map(h => r[h]).join(','));
+    }
+    return lines.join('\n');
+  }
+
+  // Assemble CSV strings
+  const jobCatalog     = toCSVLocal(JOBS.map(j => ({job_code:j.code, job_profile_title:j.title})));
+  const marketData     = toCSVLocal(buildMarketRows());
+  const compStructures = toCSVLocal(buildStructures());
+  const employeeData   = toCSVLocal(buildEmployees(totalEmployees));
+
+  return { jobCatalog, marketData, compStructures, employeeData };
+}
+
+// IMPORTANT: this replaces your existing loadSample() so the button uses the generator
+function loadSample(){
+  const gen = buildSampleSets(SAMPLE_SIZE);
+
+  // Update in-memory sample store used by the UI
+  SAMPLE_CSV.job_catalog     = gen.jobCatalog;
+  SAMPLE_CSV.employee_data   = gen.employeeData;
+  SAMPLE_CSV.market_data     = gen.marketData;
+  SAMPLE_CSV.comp_structures = gen.compStructures;
+
+  // Populate the four uploader slots and mark them ready
+  uploadList.forEach(u=>{
+    const text = SAMPLE_CSV[u.key];
+    state.files[u.key] = { name:`${u.key}.csv`, size:text.length, text };
+    const meta = document.getElementById(`meta-${u.key}`);
+    if(meta) meta.textContent = `${u.key}.csv • ${bytes(text.length)}`;
+    const zone = [...el.uploaders.children].find(z => z.dataset.key === u.key);
+    if(zone) $('.remove', zone).disabled = false;
+  });
+
+  checkReady();
+}
+  
 let SAMPLE_CSV = JSON.parse(JSON.stringify(DEFAULT_CSV));
 
 /* =========================

@@ -169,11 +169,6 @@ canvas{width:100%;height:320px;background:#fff;border:1px solid var(--border);bo
     <div class="group">
       <h2>Files</h2>
       <div id="uploaders"></div>
-      <div class="controls-row">
-        <button class="btn" id="loadSampleBtn">Load Sample Data</button>
-        <button class="btn ghost" id="editSampleBtn">Edit Sample Data</button>
-        <button class="btn ghost" id="resetSampleBtn">Reset to Default</button>
-      </div>
       <div class="small" style="margin-top:6px">Four CSVs required: Job Catalog, Employees, Market, Structures.</div>
     </div>
 
@@ -198,19 +193,35 @@ canvas{width:100%;height:320px;background:#fff;border:1px solid var(--border);bo
     </div>
 
     <div class="group">
-      <h2>Run</h2>
-      <div id="errorBanner" class="banner" role="alert"><span class="spinner" aria-hidden="true"></span><span id="errorText">Error</span></div>
-      <div class="controls-row">
-        <button class="btn primary" id="runBtn" disabled><span class="spinner" style="display:none" id="runSpin"></span> Run Market Analysis</button>
-        <button class="btn ghost" id="viewPromptBtn">View Prompt</button>
-      </div>
-      <div class="legend">
-        <span class="chip"><span class="dot green"></span>95 to 105 good</span>
-        <span class="chip"><span class="dot amber"></span>near bound</span>
-        <span class="chip"><span class="dot red"></span>out of bound</span>
-      </div>
-    </div>
+  <h2>Analysis Actions</h2>
+  <div class="small">Load or edit samples, view the prompt, then run the analysis.</div>
 
+  <div id="errorBanner" class="banner" role="alert">
+    <span class="spinner" aria-hidden="true"></span>
+    <span id="errorText">Error</span>
+  </div>
+
+  <div class="controls-row" style="margin-top:8px">
+    <button class="btn" id="loadSampleBtn">Load Sample Data</button>
+    <button class="btn ghost" id="editSampleBtn">Edit Sample Data</button>
+    <button class="btn ghost" id="resetSampleBtn">Reset to Default</button>
+  </div>
+
+  <div class="controls-row" style="margin-top:8px">
+    <button class="btn primary" id="runBtn" disabled>
+      <span class="spinner" style="display:none" id="runSpin"></span>
+      Run Market Analysis
+    </button>
+    <button class="btn ghost" id="viewPromptBtn">View Prompt</button>
+  </div>
+
+  <div class="legend">
+    <span class="chip"><span class="dot green"></span>95 to 105 good</span>
+    <span class="chip"><span class="dot amber"></span>near bound</span>
+    <span class="chip"><span class="dot red"></span>out of bound</span>
+  </div>
+</div>
+    
     <div class="group">
       <h2>Strategic Modeling & Costing</h2>
       <label for="rule">Rule</label>

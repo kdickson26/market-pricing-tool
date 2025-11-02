@@ -831,20 +831,6 @@ function buildUploaders(){
   });
 }
 
-/* =========================
-   Sample data load/edit/reset
-   ========================= */
-function loadSample(){
-  // populate state.files with in-memory CSVs
-  uploadList.forEach(u=>{
-    const text=SAMPLE_CSV[u.key];
-    state.files[u.key]={name:`${u.key}.csv`, size:text.length, text};
-    const meta=document.getElementById(`meta-${u.key}`);
-    if(meta) meta.textContent=`${u.key}.csv • ${bytes(text.length)}`;
-    const zone=[...el.uploaders.children].find(z=>z.dataset.key===u.key);
-    if(zone) $('.remove',zone).disabled=false;
-  });
-  checkReady();
 }
 function openEditModal(){
   el.txtJob.value=SAMPLE_CSV.job_catalog;

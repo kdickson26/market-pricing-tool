@@ -603,29 +603,6 @@ function buildSampleSets(totalEmployees = 150){
 
   return { jobCatalog, marketData, compStructures, employeeData };
 }
-
-// IMPORTANT: this replaces your existing loadSample() so the button uses the generator
-function loadGeneratedSample(){
-  const gen = buildSampleSets(SAMPLE_SIZE);
-
-  // Update in-memory sample store used by the UI
-  SAMPLE_CSV.job_catalog     = gen.jobCatalog;
-  SAMPLE_CSV.employee_data   = gen.employeeData;
-  SAMPLE_CSV.market_data     = gen.marketData;
-  SAMPLE_CSV.comp_structures = gen.compStructures;
-
-  // Populate the four uploader slots and mark them ready
-  uploadList.forEach(u=>{
-    const text = SAMPLE_CSV[u.key];
-    state.files[u.key] = { name:`${u.key}.csv`, size:text.length, text };
-    const meta = document.getElementById(`meta-${u.key}`);
-    if(meta) meta.textContent = `${u.key}.csv • ${bytes(text.length)}`;
-    const zone = [...el.uploaders.children].find(z => z.dataset.key === u.key);
-    if(zone) $('.remove', zone).disabled = false;
-  });
-
-  checkReady();
-}
 // This function LOADS the generator
 function loadGeneratedSample() {
   const gen = buildSampleSets(SAMPLE_SIZE);
@@ -854,7 +831,6 @@ function buildUploaders() { // <-- ADDED {
       state.files[item.key]=null; setMeta(); remove.disabled=true; checkReady();
     });
   });
-} // <-- REMOVED STRAY }
 }
 function openEditModal(){
   el.txtJob.value=SAMPLE_CSV.job_catalog;
@@ -1291,18 +1267,6 @@ function setup(){
     SAMPLE_CSV.comp_structures = el.txtStr.value.trim();
     pushSampleToState(); // <--- Pushes your edits to the state
     closeModal(); 
-    showError('Edits applied. Sample storage updated for this session.');
-  });
-  
-  el.resetToDefault.addEventListener('click', ()=>{
-    el.txtJob.value=DEFAULT_CSV.job_catalog;
-    el.txtEmp.value=DEFAULT_CSV.employee_data;
-    el.txtMkt.value=DEFAULT_CSV.market_data;
-    el.txtStr.value=DEFAULT_CSV.comp_structures;
-  });
-
-  // prompt view
-  el.viewPromptBtn.addEventListener('click', ()=>{
     const txt=`Market Pricing Analysis Prompt (educational view)
 • Join employee, job catalog, market, and structures by job_code
 • Apply agingFactor = (1 + annualRate/100)^(months/12)

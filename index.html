@@ -605,7 +605,7 @@ function buildSampleSets(totalEmployees = 150){
 }
 
 // IMPORTANT: this replaces your existing loadSample() so the button uses the generator
-function loadSample(){
+function loadGeneratedSample(){
   const gen = buildSampleSets(SAMPLE_SIZE);
 
   // Update in-memory sample store used by the UI
@@ -626,7 +626,32 @@ function loadSample(){
 
   checkReady();
 }
+// This function LOADS the generator
+function loadGeneratedSample() {
+  const gen = buildSampleSets(SAMPLE_SIZE);
+  SAMPLE_CSV.job_catalog = gen.jobCatalog;
+  SAMPLE_CSV.employee_data = gen.employeeData;
+  SAMPLE_CSV.market_data = gen.marketData;
+  SAMPLE_CSV.comp_structures = gen.compStructures;
   
+  // Now push the new SAMPLE_CSV data into state.files
+  pushSampleToState();
+}
+
+// This helper pushes whatevers in SAMPLE_CSV to state.files
+function pushSampleToState() {
+  uploadList.forEach(u=>{
+    const text = SAMPLE_CSV[u.key];
+    state.files[u.key] = { name:`${u.key}.csv`, size:text.length, text };
+    const meta = document.getElementById(`meta-${u.key}`);
+    if(meta) meta.textContent = `${u.key}.csv • ${bytes(text.length)}`;
+    const zone = [...el.uploaders.children].find(z => z.dataset.key === u.key);
+    if(zone) $('.remove', zone).disabled = false;
+  });
+  checkReady();
+}
+
+// RENAME your old loadSample function 
 let SAMPLE_CSV = JSON.parse(JSON.stringify(DEFAULT_CSV));
 
 /* =========================
@@ -775,7 +800,7 @@ function colorClassStruct(pct){
 /* =========================
    Build uploaders
    ========================= */
-function buildUploaders(){
+function buildUploaders() { // <-- ADDED {
   el.uploaders.innerHTML='';
   uploadList.forEach(item=>{
     const zone=document.createElement('div');
@@ -829,8 +854,7 @@ function buildUploaders(){
       state.files[item.key]=null; setMeta(); remove.disabled=true; checkReady();
     });
   });
-}
-
+} // <-- REMOVED STRAY }
 }
 function openEditModal(){
   el.txtJob.value=SAMPLE_CSV.job_catalog;
@@ -1232,24 +1256,44 @@ function setupTabs(){
 
 function setup(){
   buildUploaders();
-  initDates(); updateAging(); loadSample();
+  initDates(); updateAging();
+  
+  // 1. Load the 150-employee generator on page load
+  loadGeneratedSample(); 
 
   el.surveyDate.addEventListener('change',updateAging);
   el.ageDate.addEventListener('change',updateAging);
   el.annualRate.addEventListener('input',updateAging);
 
   el.runBtn.addEventListener('click', runAnalysis);
-  el.loadSample.addEventListener('click', ()=>{ loadSample(); showError('Sample data loaded.'); });
-  el.resetSample.addEventListener('click', ()=>{ SAMPLE_CSV=JSON.parse(JSON.stringify(DEFAULT_CSV)); loadSample(); showError('Sample data reset.'); });
+  
+  // 2. "Load Sample Data" button now just runs the generator
+  el.loadSample.addEventListener('click', ()=>{ 
+    loadGeneratedSample(); 
+    showError('150-employee sample loaded.'); 
+  });
+  
+  // 3. "Reset to Default" button now loads the 40-employee set
+  el.resetSample.addEventListener('click', ()=>{ 
+    SAMPLE_CSV=JSON.parse(JSON.stringify(DEFAULT_CSV)); 
+    pushSampleToState(); // <--- Pushes the 40-employee set to the state
+    showError('Default 40-employee sample loaded.'); 
+  });
+  
   el.editSample.addEventListener('click', openEditModal);
   el.closeModalBtn.addEventListener('click', closeModal);
+  
+  // 4. "Apply Edits" now correctly applies edits without re-running the generator
   el.applyEdits.addEventListener('click', ()=>{
     SAMPLE_CSV.job_catalog = el.txtJob.value.trim();
     SAMPLE_CSV.employee_data = el.txtEmp.value.trim();
     SAMPLE_CSV.market_data  = el.txtMkt.value.trim();
     SAMPLE_CSV.comp_structures = el.txtStr.value.trim();
-    loadSample(); closeModal(); showError('Edits applied. Sample storage updated for this session.');
+    pushSampleToState(); // <--- Pushes your edits to the state
+    closeModal(); 
+    showError('Edits applied. Sample storage updated for this session.');
   });
+  
   el.resetToDefault.addEventListener('click', ()=>{
     el.txtJob.value=DEFAULT_CSV.job_catalog;
     el.txtEmp.value=DEFAULT_CSV.employee_data;
